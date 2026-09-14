@@ -53,6 +53,7 @@ deadline = register_layout(
     approval_days,
 )
 
+"""Добавление комментария клиента к макету."""
 comment_text = "Увеличить логотип и заменить цвет кнопки на фирменный"
 add_comment(client_name, comment_text, today, layout_version)
 
@@ -61,6 +62,7 @@ is_approved = False
 
 print("Статус макета: " + get_approval_status(is_approved, has_comments))
 
+"""Контроль срока согласования."""
 remaining = days_left(deadline, today)
 if remaining > 0:
     print(f"До окончания срока согласования осталось дней: {remaining}")
