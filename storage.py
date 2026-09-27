@@ -1,12 +1,20 @@
 """Сохранение и загрузка данных проекта в JSON-файлах.
 
-Чтение и запись выполняются через контекстный менеджер with.
-Отсутствие файла и некорректный JSON обрабатываются исключениями.
+JSON остаётся форматом хранения: при загрузке данные преобразуются
+в объекты классов предметной области, при сохранении объекты
+преобразуются обратно в данные. Связанные объекты хранятся в файлах
+по их идентификаторам.
 """
 
 import json
 import os
 
+from models import Client, Comment, Designer, Layout
+from models.layouts import get_layout_by_id
+from models.participants import find_participant_by_id
+
+DESIGNERS_FILE = os.path.join("data", "designers.json")
+CLIENTS_FILE = os.path.join("data", "clients.json")
 LAYOUTS_FILE = os.path.join("data", "layouts.json")
 COMMENTS_FILE = os.path.join("data", "comments.json")
 
@@ -40,24 +48,84 @@ def save_data(filename: str, items: list[dict]) -> None:
         print(f"Не удалось сохранить файл {filename}: {error}")
 
 
-def load_layouts(filename: str = LAYOUTS_FILE) -> list[dict]:
-    """Загрузить макеты из JSON-файла."""
-    return load_data(filename)
+def load_designers(filename: str = DESIGNERS_FILE) -> list[Designer]:
+    """Загрузить дизайнеров и создать объекты Designer."""
+    return [Designer.from_data(item) for item in load_data(filename)]
 
 
-def save_layouts(layouts: list[dict], filename: str = LAYOUTS_FILE) -> None:
-    """Сохранить макеты в JSON-файл."""
-    save_data(filename, layouts)
+def save_designers(
+    designers: list[Designer],
+    filename: str = DESIGNERS_FILE,
+) -> None:
+    """Сохранить объекты Designer в JSON-файл."""
+    save_data(filename, [item.to_data() for item in designers])
 
 
-def load_comments(filename: str = COMMENTS_FILE) -> list[dict]:
-    """Загрузить комментарии из JSON-файла."""
-    return load_data(filename)
+def load_clients(filename: str = CLIENTS_FILE) -> list[Client]:
+    """Загрузить клиентов и создать объекты Client."""
+    return [Client.from_data(item) for item in load_data(filename)]
+
+
+def save_clients(
+    clients: list[Client],
+    filename: str = CLIENTS_FILE,
+) -> None:
+    """Сохранить объекты Client в JSON-файл."""
+    save_data(filename, [item.to_data() for item in clients])
+
+
+def load_layouts(
+    designers: list[Designer],
+    clients: list[Client],
+    filename: str = LAYOUTS_FILE,
+) -> list[Layout]:
+    """Загрузить макеты и связать их с дизайнерами и клиентами.
+
+    Запись пропускается, если указанный дизайнер или клиент
+    отсутствует в загруженных коллекциях.
+    """
+    layouts = []
+    for item in load_data(filename):
+        designer = find_participant_by_id(designers, item["designer_id"])
+        client = find_participant_by_id(clients, item["client_id"])
+        if designer is None or client is None:
+            print(f"Макет {item['id']} пропущен: участник не найден")
+            continue
+        layouts.append(Layout.from_data(item, designer, client))
+    return layouts
+
+
+def save_layouts(
+    layouts: list[Layout],
+    filename: str = LAYOUTS_FILE,
+) -> None:
+    """Сохранить объекты Layout в JSON-файл."""
+    save_data(filename, [item.to_data() for item in layouts])
+
+
+def load_comments(
+    layouts: list[Layout],
+    clients: list[Client],
+    filename: str = COMMENTS_FILE,
+) -> list[Comment]:
+    """Загрузить комментарии и связать их с макетами и клиентами.
+
+    Запись пропускается, если макет или автор не найдены.
+    """
+    comments = []
+    for item in load_data(filename):
+        layout = get_layout_by_id(layouts, item["layout_id"])
+        author = find_participant_by_id(clients, item["author_id"])
+        if layout is None or author is None:
+            print(f"Комментарий {item['id']} пропущен: объект не найден")
+            continue
+        comments.append(Comment.from_data(item, layout, author))
+    return comments
 
 
 def save_comments(
-    comments: list[dict],
+    comments: list[Comment],
     filename: str = COMMENTS_FILE,
 ) -> None:
-    """Сохранить комментарии в JSON-файл."""
-    save_data(filename, comments)
+    """Сохранить объекты Comment в JSON-файл."""
+    save_data(filename, [item.to_data() for item in comments])

@@ -1,14 +1,28 @@
 """Сервис согласования макетов.
 
-Точка запуска приложения: меню и вызов функций проекта.
+Точка запуска приложения: меню и взаимодействие объектов
+предметной области.
 """
 
 from datetime import date
 
-import comments as comments_module
-import layouts as layouts_module
 import storage
 import utils
+from models import Client, Comment, Designer, Layout
+from models.comments import (
+    add_comment,
+    count_comments_by_layout,
+    get_layout_comments,
+    has_comments,
+)
+from models.layouts import (
+    add_layout,
+    count_by_status,
+    find_layout,
+    get_layout_by_id,
+    sort_layouts,
+)
+from models.participants import find_participant_by_id
 
 MENU = """
 === Сервис согласования макетов ===
@@ -20,135 +34,155 @@ MENU = """
 5. Добавить комментарий клиента
 6. Отправить макет на доработку
 7. Утвердить макет
-8. Показать статистику по статусам
+8. Показать статистику
+9. Показать участников
 0. Выход
 """
 
 
-def show_layouts(layouts: list[dict]) -> None:
-    """Вывести список макетов в виде таблицы."""
+def show_layouts(layouts: list[Layout]) -> None:
+    """Вывести список макетов, отсортированный по сроку."""
     if not layouts:
         print("Макетов пока нет")
         return
-    print(f"{'id':>3} {'Макет':<36} {'Вер.':>4} "
-          f"{'Срок':<12} {'Статус':<16}")
-    for layout in layouts_module.sort_layouts(layouts):
-        print(f"{layout['id']:>3} {layout['title'][:36]:<36} "
-              f"{layout['version']:>4} {layout['deadline']:<12} "
-              f"{layout['status']:<16}")
+    for layout in sort_layouts(layouts):
+        print(f"{layout.id}. {layout}")
+        print(f"   {layout.designer.name} → {layout.client.name}")
 
 
-def show_comments(comments: list[dict], layout_id: int) -> None:
+def show_comments(comments: list[Comment], layout: Layout) -> None:
     """Вывести комментарии к выбранному макету."""
-    selected = comments_module.get_layout_comments(comments, layout_id)
+    selected = get_layout_comments(comments, layout)
     if not selected:
         print("Комментариев к этому макету нет")
         return
     for comment in selected:
-        print(comments_module.format_comment(comment))
+        print(comment)
 
 
-def action_find_layout(layouts: list[dict]) -> None:
+def show_participants(
+    designers: list[Designer],
+    clients: list[Client],
+) -> None:
+    """Вывести список дизайнеров и клиентов."""
+    for participant in list(designers) + list(clients):
+        print(f"{participant.id}. {participant}")
+
+
+def ask_layout(layouts: list[Layout]) -> Layout | None:
+    """Запросить идентификатор макета и вернуть найденный объект."""
+    layout = get_layout_by_id(layouts, utils.input_int("Номер макета: "))
+    if layout is None:
+        print("Макет с таким номером не найден")
+    return layout
+
+
+def action_find_layout(layouts: list[Layout]) -> None:
     """Найти и вывести макеты по подстроке названия."""
-    query = utils.input_text("Часть названия макета: ")
-    found = layouts_module.find_layout(layouts, query)
+    found = find_layout(layouts, utils.input_text("Часть названия: "))
     if found:
         show_layouts(found)
     else:
         print("Ничего не найдено")
 
 
-def action_add_layout(layouts: list[dict]) -> None:
+def create_new_layout(
+    layouts: list[Layout],
+    designers: list[Designer],
+    clients: list[Client],
+) -> None:
     """Зарегистрировать новый макет на согласование."""
+    designer = find_participant_by_id(
+        designers, utils.input_int("Номер дизайнера: ")
+    )
+    if designer is None:
+        print("Дизайнер не найден, макет не создан")
+        return
+    client = find_participant_by_id(
+        clients, utils.input_int("Номер клиента: ")
+    )
+    if client is None:
+        print("Клиент не найден, макет не создан")
+        return
     title = utils.input_text("Название макета: ")
-    designer = utils.input_text("Дизайнер: ")
-    client = utils.input_text("Клиент: ")
     sent_date = utils.input_date("Дата отправки (ДД.ММ.ГГГГ): ")
     approval_days = utils.input_int("Срок согласования, дней: ")
-    layout = layouts_module.add_layout(
+    layout = add_layout(
         layouts, title, designer, client, sent_date, approval_days
     )
     storage.save_layouts(layouts)
-    layouts_module.register_layout(
-        layout["title"],
-        layout["version"],
-        layout["designer"],
-        layout["client"],
-        sent_date,
-        approval_days,
-    )
-    remaining = layouts_module.days_left(
-        date.fromisoformat(layout["deadline"]), date.today()
-    )
-    print(f"Дней до окончания срока согласования: {remaining}")
+    print(f"Макет зарегистрирован: {layout}")
+    print(f"Дней до окончания срока: {layout.days_left(date.today())}")
 
 
-def action_add_comment(layouts: list[dict], comments: list[dict]) -> None:
-    """Добавить комментарий клиента к макету."""
-    layout_id = utils.input_int("Идентификатор макета: ")
-    layout = layouts_module.get_layout_by_id(layouts, layout_id)
+def create_new_comment(
+    comments: list[Comment],
+    layouts: list[Layout],
+) -> None:
+    """Добавить комментарий клиента к выбранному макету."""
+    layout = ask_layout(layouts)
     if layout is None:
-        print("Макет с таким идентификатором не найден")
         return
-    author = utils.input_text("Автор комментария: ")
     text = utils.input_text("Текст комментария: ")
     try:
-        comment = comments_module.add_comment(
-            comments,
-            layout_id,
-            author,
-            text,
-            date.today(),
-            layout["version"],
+        comment = add_comment(
+            comments, layout, layout.client, text, date.today()
         )
     except ValueError as error:
         print(f"Ошибка: {error}")
         return
     storage.save_comments(comments)
-    print("Добавлен комментарий: "
-          + comments_module.format_comment(comment))
+    print(f"Добавлен комментарий: {comment}")
 
 
-def action_change_status(
-    layouts: list[dict],
-    comments: list[dict],
+def change_layout_status(
+    layouts: list[Layout],
+    comments: list[Comment],
     approve: bool,
 ) -> None:
     """Утвердить макет или отправить его на доработку."""
-    layout_id = utils.input_int("Идентификатор макета: ")
+    layout = ask_layout(layouts)
+    if layout is None:
+        return
     try:
         if approve:
-            layout = layouts_module.approve_layout(layouts, layout_id)
+            layout.approve()
         else:
-            layout = layouts_module.send_to_revision(layouts, layout_id)
+            layout.send_to_revision()
     except ValueError as error:
         print(f"Ошибка: {error}")
         return
     storage.save_layouts(layouts)
-    status = layouts_module.get_approval_status(
-        approve,
-        comments_module.has_comments(comments, layout_id),
-    )
-    print(f"Макет «{layout['title']}» — {status}, "
-          f"версия {layout['version']}")
+    print(f"{layout}")
+    if has_comments(comments, layout):
+        print("У макета есть замечания клиента")
 
 
-def action_statistics(layouts: list[dict], comments: list[dict]) -> None:
+def show_statistics(
+    layouts: list[Layout],
+    comments: list[Comment],
+) -> None:
     """Вывести статистику по статусам макетов и комментариям."""
-    statistics = layouts_module.count_by_status(layouts)
-    for status, amount in statistics.items():
+    for status, amount in count_by_status(layouts).items():
         print(f"{status}: {amount}")
-    print(f"Всего комментариев: {len(comments)}")
+    for layout_id, amount in count_comments_by_layout(comments).items():
+        layout = get_layout_by_id(layouts, layout_id)
+        title = layout.title if layout else "макет удалён"
+        print(f"Комментариев к «{title}»: {amount}")
 
 
 def main() -> None:
-    """Точка запуска приложения: цикл меню и вызов функций."""
-    layouts = storage.load_layouts()
-    comments = storage.load_comments()
+    """Точка запуска приложения: загрузка данных и цикл меню."""
+    designers = storage.load_designers()
+    clients = storage.load_clients()
+    layouts = storage.load_layouts(designers, clients)
+    comments = storage.load_comments(layouts, clients)
     while True:
         print(MENU)
         choice = utils.input_int("Выберите действие: ")
         if choice == 0:
+            storage.save_layouts(layouts)
+            storage.save_comments(comments)
             print("Работа завершена")
             break
         elif choice == 1:
@@ -156,17 +190,21 @@ def main() -> None:
         elif choice == 2:
             action_find_layout(layouts)
         elif choice == 3:
-            show_comments(comments, utils.input_int("Идентификатор: "))
+            layout = ask_layout(layouts)
+            if layout is not None:
+                show_comments(comments, layout)
         elif choice == 4:
-            action_add_layout(layouts)
+            create_new_layout(layouts, designers, clients)
         elif choice == 5:
-            action_add_comment(layouts, comments)
+            create_new_comment(comments, layouts)
         elif choice == 6:
-            action_change_status(layouts, comments, approve=False)
+            change_layout_status(layouts, comments, approve=False)
         elif choice == 7:
-            action_change_status(layouts, comments, approve=True)
+            change_layout_status(layouts, comments, approve=True)
         elif choice == 8:
-            action_statistics(layouts, comments)
+            show_statistics(layouts, comments)
+        elif choice == 9:
+            show_participants(designers, clients)
         else:
             print("Такого пункта меню нет")
 

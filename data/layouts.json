@@ -2,41 +2,31 @@
     {
         "id": 1,
         "title": "Главная страница интернет-магазина",
-        "version": 3,
-        "designer": "Грязнова Арина",
-        "client": "ООО «Ромашка»",
+        "version": 2,
+        "designer_id": 1,
+        "client_id": 1,
         "sent_date": "2026-09-10",
-        "deadline": "2026-09-15",
-        "status": "Утверждён"
+        "approval_days": 5,
+        "status": "На доработке"
     },
     {
         "id": 2,
         "title": "Карточка товара",
         "version": 1,
-        "designer": "Грязнова Арина",
-        "client": "ООО «Ромашка»",
+        "designer_id": 1,
+        "client_id": 1,
         "sent_date": "2026-09-18",
-        "deadline": "2026-09-25",
+        "approval_days": 7,
         "status": "На согласовании"
     },
     {
         "id": 3,
         "title": "Баннер осенней распродажи",
         "version": 1,
-        "designer": "Смирнов Илья",
-        "client": "ИП Кузнецов",
+        "designer_id": 2,
+        "client_id": 2,
         "sent_date": "2026-09-05",
-        "deadline": "2026-09-08",
-        "status": "Утверждён"
-    },
-    {
-        "id": 4,
-        "title": "фреймворк проект",
-        "version": 1,
-        "designer": "арина грязнова",
-        "client": "преподаватель",
-        "sent_date": "2026-09-19",
-        "deadline": "2026-09-24",
+        "approval_days": 3,
         "status": "Утверждён"
     }
 ]

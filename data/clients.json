@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "name": "Иванов Пётр",
+        "email": "ivanov@romashka.ru",
+        "company": "ООО «Ромашка»"
+    },
+    {
+        "id": 2,
+        "name": "Кузнецов Олег",
+        "email": "kuznetsov@example.com",
+        "company": "ИП Кузнецов"
+    }
+]
