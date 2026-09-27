@@ -4,6 +4,7 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
 .idea/
 .vscode/
 .DS_Store
