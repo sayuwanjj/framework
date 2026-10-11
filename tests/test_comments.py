@@ -5,7 +5,8 @@ from datetime import date
 import pytest
 
 from models import Client, Comment, Designer, Layout
-from models.comments import add_comment, get_layout_comments, has_comments
+from models.comments import (add_comment, get_comment_by_id,
+                             get_layout_comments, has_comments)
 
 DESIGNER = Designer(1, "Грязнова Арина", "arina@example.com")
 CLIENT = Client(1, "Иванов Пётр", "p@example.com", "ООО «Ромашка»")
@@ -62,3 +63,11 @@ def test_get_layout_comments():
     add_comment(comments, second, CLIENT, "Второй", date(2026, 9, 13))
     assert len(get_layout_comments(comments, first)) == 1
     assert has_comments(comments, second) is True
+
+
+def test_get_comment_by_id():
+    layout = make_layout()
+    comments = []
+    comment = add_comment(comments, layout, CLIENT, "Текст", date(2026, 9, 13))
+    assert get_comment_by_id(comments, comment.id) is comment
+    assert get_comment_by_id(comments, 99) is None

@@ -5,6 +5,8 @@
 контактных данных, но по-разному представляются пользователю.
 """
 
+from typing import TypeVar
+
 
 class Participant:
     """Участник согласования макета."""
@@ -90,6 +92,9 @@ class Client(Participant):
         return f"{self.role} {self.name} ({self.email})"
 
 
+ParticipantT = TypeVar("ParticipantT", bound=Participant)
+
+
 def add_designer(
     designers: list[Designer],
     name: str,
@@ -116,10 +121,15 @@ def add_client(
 
 
 def find_participant_by_id(
-    participants: list[Participant],
+    participants: list[ParticipantT],
     participant_id: int,
-) -> Participant | None:
-    """Найти участника по идентификатору или вернуть None."""
+) -> ParticipantT | None:
+    """Найти участника по идентификатору или вернуть None.
+
+    Тип результата совпадает с типом элементов коллекции: поиск
+    в списке дизайнеров возвращает объект Designer, в списке
+    клиентов — объект Client.
+    """
     for participant in participants:
         if participant.id == participant_id:
             return participant
@@ -127,9 +137,9 @@ def find_participant_by_id(
 
 
 def find_participant(
-    participants: list[Participant],
+    participants: list[ParticipantT],
     query: str,
-) -> list[Participant]:
+) -> list[ParticipantT]:
     """Найти участников по подстроке имени без учёта регистра."""
     return [
         item for item in participants if query.lower() in item.name.lower()

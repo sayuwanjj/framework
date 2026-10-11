@@ -9,19 +9,10 @@ from datetime import date
 import storage
 import utils
 from models import Client, Comment, Designer, Layout
-from models.comments import (
-    add_comment,
-    count_comments_by_layout,
-    get_layout_comments,
-    has_comments,
-)
-from models.layouts import (
-    add_layout,
-    count_by_status,
-    find_layout,
-    get_layout_by_id,
-    sort_layouts,
-)
+from models.comments import (add_comment, count_comments_by_layout,
+                             get_layout_comments, has_comments)
+from models.layouts import (add_layout, count_by_status, find_layout,
+                            get_layout_by_id, sort_layouts)
 from models.participants import find_participant_by_id
 
 MENU = """

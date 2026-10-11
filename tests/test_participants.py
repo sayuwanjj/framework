@@ -1,12 +1,8 @@
 """Тесты классов участников согласования."""
 
 from models import Client, Designer
-from models.participants import (
-    add_client,
-    add_designer,
-    find_participant,
-    find_participant_by_id,
-)
+from models.participants import (add_client, add_designer, find_participant,
+                                 find_participant_by_id)
 
 
 def test_designer_creation():

@@ -93,6 +93,17 @@ def add_comment(
     return comment
 
 
+def get_comment_by_id(
+    comments: list[Comment],
+    comment_id: int,
+) -> Comment | None:
+    """Найти комментарий по идентификатору или вернуть None."""
+    for comment in comments:
+        if comment.id == comment_id:
+            return comment
+    return None
+
+
 def get_layout_comments(
     comments: list[Comment],
     layout: Layout,

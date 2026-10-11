@@ -5,13 +5,9 @@ from datetime import date
 import pytest
 
 from models import Client, Designer, Layout
-from models.layouts import (
-    add_layout,
-    count_by_status,
-    filter_layouts_by_status,
-    find_layout,
-    sort_layouts,
-)
+from models.layouts import (add_layout, count_by_status,
+                            filter_layouts_by_status, find_layout,
+                            sort_layouts)
 
 DESIGNER = Designer(1, "Грязнова Арина", "arina@example.com")
 CLIENT = Client(1, "Иванов Пётр", "p@example.com", "ООО «Ромашка»")
