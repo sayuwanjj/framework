@@ -1,0 +1,13 @@
+{% if layout.is_approved %}
+    <span class="badge bg-success layout-status layout-status-approved">
+        {{ layout.status }}
+    </span>
+{% elif layout.status == layout.STATUS_REVISION %}
+    <span class="badge bg-secondary layout-status layout-status-revision">
+        {{ layout.status }}
+    </span>
+{% else %}
+    <span class="badge bg-warning text-dark layout-status layout-status-review">
+        {{ layout.status }}
+    </span>
+{% endif %}

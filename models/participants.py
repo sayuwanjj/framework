@@ -5,7 +5,7 @@
 контактных данных, но по-разному представляются пользователю.
 """
 
-from typing import TypeVar
+from typing import Self, TypeVar
 
 
 class Participant:
@@ -28,7 +28,7 @@ class Participant:
         return "Участник"
 
     @classmethod
-    def from_data(cls, data: dict) -> "Participant":
+    def from_data(cls, data: dict) -> Self:
         """Создать участника из данных JSON."""
         return cls(data["id"], data["name"], data["email"])
 
@@ -70,7 +70,7 @@ class Client(Participant):
         return "Клиент"
 
     @classmethod
-    def from_data(cls, data: dict) -> "Client":
+    def from_data(cls, data: dict) -> Self:
         """Создать клиента из данных JSON."""
         return cls(
             data["id"],

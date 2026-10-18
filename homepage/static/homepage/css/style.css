@@ -1,0 +1,53 @@
+/* Собственные стили сервиса согласования макетов. */
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f7f7fb;
+}
+
+main {
+    flex: 1;
+}
+
+.site-header {
+    padding: 0.75rem 0;
+    margin-bottom: 1.5rem;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e3e3ef;
+}
+
+.service-logo {
+    width: 48px;
+    height: 48px;
+}
+
+.site-nav .nav-link {
+    color: #4b3fa8;
+    font-weight: 500;
+}
+
+.site-nav .nav-link.active {
+    color: #ffffff;
+    background-color: #4b3fa8;
+    border-radius: 6px;
+}
+
+.layout-card,
+.comment-card {
+    border: 1px solid #ddd;
+    border-left: 4px solid #4b3fa8;
+    border-radius: 8px;
+}
+
+.layout-status {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.site-footer {
+    padding: 1.5rem 0 1rem;
+    color: #6c6c80;
+    font-size: 0.9rem;
+}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if comment %}
+        Комментарий №{{ comment.id }} - Сервис согласования макетов
+    {% else %}
+        Комментарий не найден - Сервис согласования макетов
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if comment %}
+        <div class="card comment-card">
+            <div class="card-body">
+                <h1 class="h3 card-title">Комментарий №{{ comment.id }}</h1>
+                <p class="card-text">
+                    <strong>Макет:</strong>
+                    <a href="{% url 'layouts:detail' comment.layout.id %}">
+                        {{ comment.layout.title }}
+                    </a>
+                    (версия {{ comment.layout_version }})
+                </p>
+                <p class="card-text">
+                    <strong>Автор:</strong> {{ comment.author.name }},
+                    {{ comment.author.company|default:"частное лицо" }}
+                </p>
+                <p class="card-text">
+                    <strong>Дата:</strong> {{ comment.date|date:"d.m.Y" }}
+                </p>
+                <p class="card-text"><strong>Текст:</strong> {{ comment.text }}</p>
+            </div>
+        </div>
+    {% else %}
+        <h1 class="text-danger">Комментарий не найден</h1>
+        <p>Комментарий с указанным идентификатором отсутствует.</p>
+    {% endif %}
+
+    <a href="{% url 'comments:list' %}" class="btn btn-outline-secondary mt-3">
+        ← к списку комментариев
+    </a>
+{% endblock %}

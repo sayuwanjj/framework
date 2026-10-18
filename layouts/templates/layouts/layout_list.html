@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Макеты - Сервис согласования макетов{% endblock %}
+
+{% block content %}
+    <h1>Макеты</h1>
+    <p>Всего макетов: {{ layouts|length }}</p>
+
+    {% for layout in layouts %}
+        {% include "layouts/includes/layout_card.html" %}
+    {% empty %}
+        <p>Макеты не найдены.</p>
+    {% endfor %}
+{% endblock %}

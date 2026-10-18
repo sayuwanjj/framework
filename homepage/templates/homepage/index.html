@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Сервис согласования макетов{% endblock %}
+
+{% block content %}
+    <h1 class="display-5">Сервис согласования макетов</h1>
+    <p class="lead">
+        Дизайнер отправляет макет клиенту, клиент оставляет комментарии
+        и утверждает макет или отправляет его на доработку.
+    </p>
+
+    <h2 class="h5 mt-4">Макеты по статусам</h2>
+    <p>Всего макетов: {{ layouts|length }}</p>
+    <ul class="list-group mb-4">
+        {% for status, amount in statistics.items %}
+            <li class="list-group-item d-flex justify-content-between">
+                {{ status }}
+                <span class="badge bg-primary rounded-pill">{{ amount }}</span>
+            </li>
+        {% empty %}
+            <li class="list-group-item">Макетов пока нет.</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{% url 'layouts:list' %}" class="btn btn-primary me-2">Макеты</a>
+    <a href="{% url 'comments:list' %}" class="btn btn-secondary">Комментарии</a>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Комментарии - Сервис согласования макетов{% endblock %}
+
+{% block content %}
+    <h1>Комментарии</h1>
+    <p>Всего комментариев: {{ comments|length }}</p>
+
+    <ul class="list-group">
+        {% for comment in comments %}
+            {% include "comments/includes/comment_item.html" %}
+        {% empty %}
+            <li class="list-group-item">Комментарии не найдены.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

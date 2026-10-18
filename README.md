@@ -3,14 +3,18 @@
 Приложение для согласования дизайн-макетов между дизайнером и
 клиентом: учёт макетов, комментариев клиента, статусов, версий и
 сроков согласования. Консольная версия (ПР3) дополнена
-веб-интерфейсом на Django (ПР5).
+веб-интерфейсом на Django (ПР5), страницы которого формируются
+шаблонами Django (ПР6).
 
 ## Используемые технологии
 
 - Python 3;
 - Django 5.2 — веб-фреймворк;
-- HTML — разметка веб-страниц;
-- CSS и Bootstrap 5.3 — оформление страниц (подключается через CDN);
+- Django Template Language (DTL) — шаблоны страниц;
+- HTML5 — разметка веб-страниц;
+- CSS3 и Bootstrap 5.3 — оформление страниц (Bootstrap подключается
+  через CDN, собственный CSS — как статический файл);
+- JavaScript — небольшое поведение интерфейса;
 - pytest — автоматизированные тесты;
 - flake8 — проверка качества кода.
 
@@ -106,20 +110,93 @@
 
 ## Страницы веб-интерфейса
 
-| URL | View-функция | Назначение |
-|-----|--------------|------------|
-| `/` | `homepage.views.index()` | главная: описание сервиса, статистика по статусам, навигация |
-| `/layouts/` | `layouts.views.layouts()` | список макетов из `data/layouts.json`, отсортированный по сроку |
-| `/layouts/<int:layout_id>/` | `layouts.views.layout_detail()` | карточка макета: участники, версия, статус, срок, комментарии |
-| `/comments/` | `comments.views.comments()` | список комментариев из `data/comments.json` |
-| `/comments/<int:comment_id>/` | `comments.views.comment_detail()` | карточка комментария: макет, автор, дата, текст |
+| URL | Имя маршрута | View-функция | Шаблон |
+|-----|--------------|--------------|--------|
+| `/` | `homepage:index` | `homepage.views.index()` | `homepage/index.html` |
+| `/layouts/` | `layouts:list` | `layouts.views.layouts()` | `layouts/layout_list.html` |
+| `/layouts/<int:layout_id>/` | `layouts:detail` | `layouts.views.layout_detail()` | `layouts/layout_detail.html` |
+| `/comments/` | `comments:list` | `comments.views.comments()` | `comments/comment_list.html` |
+| `/comments/<int:comment_id>/` | `comments:detail` | `comments.views.comment_detail()` | `comments/comment_detail.html` |
+
+Страницы формируются шаблонами Django: view-функции загружают данные
+функциями ПР3, собирают словарь контекста и вызывают `render()`.
+HTML в Python-коде не формируется, функция `page()` из ПР5 удалена.
 
 Если макет или комментарий с указанным идентификатором не найден,
 страница возвращает код статуса 404 с сообщением «Макет не найден» /
 «Комментарий не найден». Для адресов, которым не соответствует ни
 один маршрут, используется собственная страница 404
 (`handler404 = "homepage.views.page_not_found"` в корневом
-`urls.py`); она отображается при `DEBUG = False`.
+`urls.py`, шаблон `templates/404.html`); она отображается при
+`DEBUG = False`.
+
+## Шаблоны Django
+
+### Базовый шаблон и наследование
+
+`templates/base.html` содержит общую структуру всех страниц:
+объявление документа, `<head>` с Bootstrap и собственным CSS,
+шапку с логотипом и навигацией, контейнер страницы, подвал и
+подключение JavaScript. В нём объявлены блоки:
+
+    {% block title %}...{% endblock %}
+    {% block content %}...{% endblock %}
+
+Дочерние шаблоны наследуют его через `{% extends "base.html" %}` и
+переопределяют блоки `title` и `content`.
+
+### Включаемые шаблоны
+
+Повторяющиеся фрагменты вынесены в отдельные шаблоны и подключаются
+через `{% include %}`:
+
+- `templates/includes/navigation.html` — навигация сайта (в
+  `base.html`);
+- `layouts/includes/layout_card.html` — карточка макета в списке;
+- `layouts/includes/layout_status.html` — цветной бейдж статуса
+  макета (в карточке и на странице макета);
+- `comments/includes/comment_item.html` — строка комментария (в
+  списке комментариев и на странице макета).
+
+### Контекст, циклы и условия
+
+View-функции передают данные в шаблон через словарь контекста,
+например `{"layouts": sort_layouts(layouts_list)}`. В шаблонах
+используются циклы `{% for %}` с обработкой пустой коллекции
+`{% empty %}` и условия `{% if %}`: статус макета, срок согласования
+(утверждён / истёк / осталось N дней), наличие найденного объекта.
+
+### Фильтры шаблонов
+
+- `{{ layouts|length }}` — количество макетов и комментариев;
+- `{{ layout.title|default:"Без названия" }}` и
+  `{{ layout.client.company|default:"частное лицо" }}` — значение по
+  умолчанию;
+- `{{ layout.deadline|date:"d.m.Y" }}` — формат даты;
+- `{{ comment.text|truncatechars:60 }}` — сокращение длинного текста
+  в списке.
+
+### Именованные URL и пространства имён
+
+В `urls.py` приложений заданы `app_name` (`homepage`, `layouts`,
+`comments`) и имена маршрутов `list` / `detail`. Ссылки в шаблонах
+строятся тегом `{% url %}`, например
+`{% url 'layouts:detail' layout.id %}`, а не жёстко заданными
+адресами.
+
+### Статические файлы
+
+Собственные статические файлы лежат в
+`homepage/static/homepage/`:
+
+- `css/style.css` — оформление шапки, навигации, карточек макетов и
+  комментариев, статусов, подвала;
+- `js/main.js` — вывод текущего года в подвале и подсветка активного
+  пункта меню;
+- `img/logo.png` — логотип сервиса в шапке.
+
+В `base.html` они подключаются через `{% load static %}` и
+`{% static '...' %}`.
 
 ## Основные операции
 
@@ -172,19 +249,39 @@ framework/
 │   ├── urls.py
 │   ├── asgi.py
 │   └── wsgi.py
+├── templates/
+│   ├── base.html
+│   ├── 404.html
+│   └── includes/
+│       └── navigation.html
 ├── homepage/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
+│   ├── static/homepage/
+│   │   ├── css/style.css
+│   │   ├── js/main.js
+│   │   └── img/logo.png
+│   ├── templates/homepage/
+│   │   └── index.html
 │   ├── migrations/
-│   ├── models.py
-│   ├── tests.py
+│   ├── admin.py, apps.py, models.py, tests.py
 │   ├── urls.py
 │   └── views.py
 ├── layouts/
-│   └── ... (та же структура, что у homepage)
+│   ├── templates/layouts/
+│   │   ├── layout_list.html
+│   │   ├── layout_detail.html
+│   │   └── includes/
+│   │       ├── layout_card.html
+│   │       └── layout_status.html
+│   ├── urls.py
+│   └── views.py
 ├── comments/
-│   └── ... (та же структура, что у homepage)
+│   ├── templates/comments/
+│   │   ├── comment_list.html
+│   │   ├── comment_detail.html
+│   │   └── includes/
+│   │       └── comment_item.html
+│   ├── urls.py
+│   └── views.py
 ├── models/
 │   ├── __init__.py
 │   ├── participants.py
@@ -206,19 +303,21 @@ framework/
 - `manage.py` — запуск команд управления Django-проектом
   (`runserver`, `check`, `migrate`, `startapp`);
 - `layout_service/` — пакет настроек Django-проекта:
-  `settings.py` — настройки (приложения, язык, часовой пояс, режим
-  отладки), `urls.py` — маршрутизация верхнего уровня и
+  `settings.py` — настройки (приложения, каталог шаблонов `DIRS`,
+  язык, часовой пояс, режим отладки), `urls.py` — маршрутизация верхнего уровня и
   `handler404`, `asgi.py` и `wsgi.py` — точки взаимодействия с
   сервером;
-- `homepage/` — Django-приложение главной страницы: в `views.py`
-  функция `page()` (общий HTML-каркас с Bootstrap и навигацией),
-  view-функции `index()` и `page_not_found()`; функция `page()`
-  размещена здесь, потому что главная страница задаёт общий вид всех
-  страниц, остальные приложения импортируют её;
+- `templates/` — шаблоны уровня проекта: базовый шаблон, страница
+  404 и навигация;
+- `homepage/` — Django-приложение главной страницы: view-функции
+  `index()` и `page_not_found()`, шаблон главной и собственные
+  статические файлы проекта;
 - `layouts/` — Django-приложение макетов: view-функции `layouts()`
-  и `layout_detail()`, маршруты в `urls.py`;
+  и `layout_detail()`, маршруты в `urls.py`, шаблоны в
+  `templates/layouts/`;
 - `comments/` — Django-приложение комментариев: view-функции
-  `comments()` и `comment_detail()`, маршруты в `urls.py`;
+  `comments()` и `comment_detail()`, маршруты в `urls.py`, шаблоны в
+  `templates/comments/`;
 - отдельное приложение для дизайнеров и клиентов не создавалось:
   участники отображаются в карточках макетов и комментариев, а работа
   с пользователями будет реализована вместе с аутентификацией;
@@ -362,10 +461,26 @@ framework/
 - навигация между страницами и оформление Bootstrap 5.3;
 - данные загружаются функциями ПР3 из JSON-файлов.
 
+Реализовано (ПР6):
+
+- страницы переведены на шаблоны Django и `render()`, функция
+  `page()` удалена;
+- базовый шаблон `base.html`, наследование `{% extends %}` и блоки
+  `{% block %}`;
+- включаемые шаблоны `{% include %}`: навигация, карточка и статус
+  макета, строка комментария;
+- передача данных через контекст, циклы `{% for %}` / `{% empty %}`
+  и условия `{% if %}`;
+- пространства имён `app_name` и ссылки `{% url %}`;
+- фильтры `length`, `default`, `date`, `truncatechars`;
+- собственные статические файлы: CSS, JavaScript и логотип.
+
+На текущем этапе данные по-прежнему хранятся в JSON-файлах: Django
+ORM, база данных приложения и формы ещё не используются.
+
 Планируется:
 
 - перенос сущностей в Django ORM и подключение базы данных;
-- переход на шаблоны (`templates/`) и отказ от функции `page()`;
 - формы создания макетов и комментариев, смена статуса через сайт;
 - реализация пользователей и разграничения доступа;
 - разработка REST API;

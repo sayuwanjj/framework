@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if layout %}
+        {{ layout.title }} - Сервис согласования макетов
+    {% else %}
+        Макет не найден - Сервис согласования макетов
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if layout %}
+        <div class="card layout-card mb-4">
+            <div class="card-body">
+                <h1 class="h3 card-title">{{ layout.title }}</h1>
+                <p class="card-text"><strong>ID:</strong> {{ layout.id }}</p>
+                <p class="card-text"><strong>Версия:</strong> {{ layout.version }}</p>
+                <p class="card-text">
+                    <strong>Статус:</strong>
+                    {% include "layouts/includes/layout_status.html" %}
+                </p>
+                <p class="card-text">
+                    <strong>Дизайнер:</strong> {{ layout.designer.name }}
+                </p>
+                <p class="card-text">
+                    <strong>Клиент:</strong> {{ layout.client.name }},
+                    {{ layout.client.company|default:"частное лицо" }}
+                </p>
+                <p class="card-text">
+                    <strong>Отправлен:</strong>
+                    {{ layout.sent_date|date:"d.m.Y" }}
+                </p>
+                <p class="card-text">
+                    <strong>Срок согласования:</strong>
+                    {{ layout.deadline|date:"d.m.Y" }}
+                    {% if layout.is_approved %}
+                        (макет утверждён)
+                    {% elif days_left < 0 %}
+                        <span class="text-danger">(срок истёк)</span>
+                    {% else %}
+                        (осталось {{ days_left }} дн.)
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <h2 class="h4">Комментарии клиента ({{ comments|length }})</h2>
+        <ul class="list-group">
+            {% for comment in comments %}
+                {% include "comments/includes/comment_item.html" %}
+            {% empty %}
+                <li class="list-group-item">Комментариев нет.</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <h1 class="text-danger">Макет не найден</h1>
+        <p>Макет с указанным идентификатором отсутствует.</p>
+    {% endif %}
+
+    <a href="{% url 'layouts:list' %}" class="btn btn-outline-secondary mt-3">
+        ← к списку макетов
+    </a>
+{% endblock %}
