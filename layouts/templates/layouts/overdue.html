@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Просроченные макеты - Сервис согласования макетов{% endblock %}
+
+{% block content %}
+    <h1>Просроченные макеты</h1>
+    <p>
+        Неутверждённые макеты, срок согласования которых истёк
+        к выбранной дате.
+    </p>
+
+    <form method="get" class="search-form card card-body mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label for="date" class="form-label">Дата проверки:</label>
+                <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value="{{ check_date }}"
+                    class="form-control"
+                >
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Показать</button>
+            </div>
+        </div>
+    </form>
+
+    {% if check_date %}
+        <h2 class="h5">На дату {{ check_date }}: {{ layouts|length }}</h2>
+        {% for layout in layouts %}
+            {% include "layouts/includes/layout_card.html" %}
+        {% empty %}
+            <p>На выбранную дату просроченных макетов нет.</p>
+        {% endfor %}
+    {% endif %}
+
+    <a href="{% url 'layouts:list' %}" class="btn btn-outline-secondary mt-3">
+        ← к списку макетов
+    </a>
+{% endblock %}

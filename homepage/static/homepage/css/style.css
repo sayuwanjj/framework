@@ -51,3 +51,19 @@ main {
     color: #6c6c80;
     font-size: 0.9rem;
 }
+
+.search-form {
+    border-radius: 8px;
+}
+
+.stat-card {
+    border-left: 4px solid #4b3fa8;
+    border-radius: 8px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4b3fa8;
+}

@@ -1,8 +1,8 @@
-{% if layout.is_approved %}
+{% if layout.status == "Утверждён" %}
     <span class="badge bg-success layout-status layout-status-approved">
         {{ layout.status }}
     </span>
-{% elif layout.status == layout.STATUS_REVISION %}
+{% elif layout.status == "На доработке" %}
     <span class="badge bg-secondary layout-status layout-status-revision">
         {{ layout.status }}
     </span>

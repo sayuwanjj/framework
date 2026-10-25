@@ -15,17 +15,17 @@
                 <h1 class="h3 card-title">Комментарий №{{ comment.id }}</h1>
                 <p class="card-text">
                     <strong>Макет:</strong>
-                    <a href="{% url 'layouts:detail' comment.layout.id %}">
-                        {{ comment.layout.title }}
+                    <a href="{% url 'layouts:detail' comment.layout_id %}">
+                        {{ comment.layout_title }}
                     </a>
                     (версия {{ comment.layout_version }})
                 </p>
                 <p class="card-text">
-                    <strong>Автор:</strong> {{ comment.author.name }},
-                    {{ comment.author.company|default:"частное лицо" }}
+                    <strong>Автор:</strong> {{ comment.author_name }},
+                    {{ comment.author_company|default:"частное лицо" }}
                 </p>
                 <p class="card-text">
-                    <strong>Дата:</strong> {{ comment.date|date:"d.m.Y" }}
+                    <strong>Дата:</strong> {{ comment.comment_date }}
                 </p>
                 <p class="card-text"><strong>Текст:</strong> {{ comment.text }}</p>
             </div>

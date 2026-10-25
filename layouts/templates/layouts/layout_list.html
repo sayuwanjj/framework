@@ -6,6 +6,15 @@
     <h1>Макеты</h1>
     <p>Всего макетов: {{ layouts|length }}</p>
 
+    <div class="section-links mb-3">
+        <a href="{% url 'layouts:search' %}" class="btn btn-outline-primary btn-sm">
+            Найти макет
+        </a>
+        <a href="{% url 'layouts:overdue' %}" class="btn btn-outline-primary btn-sm">
+            Просроченные макеты
+        </a>
+    </div>
+
     {% for layout in layouts %}
         {% include "layouts/includes/layout_card.html" %}
     {% empty %}

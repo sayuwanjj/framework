@@ -5,8 +5,11 @@
                 {{ layout.title|default:"Без названия" }}
             </h2>
             <p class="card-text text-muted mb-2">
-                Версия {{ layout.version }} · срок до
-                {{ layout.deadline|date:"d.m.Y" }}
+                Версия {{ layout.version }} · срок до {{ layout.deadline }}
+            </p>
+            <p class="card-text mb-2">
+                Дизайнер: {{ layout.designer_name }} ·
+                клиент: {{ layout.client_name }}
             </p>
             <a href="{% url 'layouts:detail' layout.id %}" class="btn btn-primary btn-sm">
                 Подробнее

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика - Сервис согласования макетов{% endblock %}
+
+{% block content %}
+    <h1>Статистика</h1>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card card-body">
+                <span class="stat-value">{{ totals.layouts_count }}</span>
+                всего макетов
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card card-body">
+                <span class="stat-value">{{ totals.waiting_count }}</span>
+                ждут ответа клиента
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card card-body">
+                <span class="stat-value">{{ totals.comments_count }}</span>
+                комментариев
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <h2 class="h5">Макеты по статусам</h2>
+            <ul class="list-group">
+                {% for item in by_status %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        {{ item.status }}
+                        <span class="badge bg-primary rounded-pill">{{ item.layouts_count }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">Данные отсутствуют.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h5">Макеты по дизайнерам</h2>
+            <ul class="list-group">
+                {% for item in by_designer %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        {{ item.designer_name }}
+                        <span class="badge bg-primary rounded-pill">{{ item.layouts_count }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">Данные отсутствуют.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h5">Комментарии по макетам</h2>
+            <ul class="list-group">
+                {% for item in by_layout %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <a href="{% url 'layouts:detail' item.id %}">{{ item.title }}</a>
+                        <span class="badge bg-primary rounded-pill">{{ item.comments_count }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">Данные отсутствуют.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h2 class="h5">Макеты без комментариев</h2>
+            <ul class="list-group">
+                {% for item in without_comments %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <a href="{% url 'layouts:detail' item.id %}">{{ item.title }}</a>
+                        <span class="text-muted">{{ item.status }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">Все макеты уже прокомментированы.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <h2 class="h5 mt-4">Самые обсуждаемые макеты</h2>
+    <form method="get" class="d-flex align-items-center gap-2 mb-3">
+        <label for="min">Комментариев не меньше:</label>
+        <input
+            type="number"
+            id="min"
+            name="min"
+            min="1"
+            value="{{ min_comments }}"
+            class="form-control w-auto"
+        >
+        <button type="submit" class="btn btn-primary btn-sm">Показать</button>
+    </form>
+    <ul class="list-group">
+        {% for item in discussed %}
+            <li class="list-group-item d-flex justify-content-between">
+                <a href="{% url 'layouts:detail' item.id %}">{{ item.title }}</a>
+                <span class="badge bg-primary rounded-pill">{{ item.comments_count }}</span>
+            </li>
+        {% empty %}
+            <li class="list-group-item">Таких макетов нет.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

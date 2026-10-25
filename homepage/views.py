@@ -2,19 +2,32 @@
 
 from django.shortcuts import render
 
-from models.layouts import count_by_status
-from storage import load_clients, load_designers, load_layouts
+from db.database import get_connection
 
 
 def index(request):
     """Главная страница: описание сервиса и статистика по статусам."""
-    designers = load_designers()
-    clients = load_clients()
-    layouts_list = load_layouts(designers, clients)
+    conn = get_connection()
+    try:
+        layouts_count = conn.execute(
+            "SELECT COUNT(*) AS layouts_count FROM layouts"
+        ).fetchone()["layouts_count"]
+        statistics = conn.execute(
+            """
+            SELECT
+                status,
+                COUNT(*) AS layouts_count
+            FROM layouts
+            GROUP BY status
+            ORDER BY layouts_count DESC, status
+            """
+        ).fetchall()
+    finally:
+        conn.close()
 
     context = {
-        "layouts": layouts_list,
-        "statistics": count_by_status(layouts_list),
+        "layouts_count": layouts_count,
+        "statistics": statistics,
     }
     return render(request, "homepage/index.html", context)
 

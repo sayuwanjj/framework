@@ -20,20 +20,18 @@
                     {% include "layouts/includes/layout_status.html" %}
                 </p>
                 <p class="card-text">
-                    <strong>Дизайнер:</strong> {{ layout.designer.name }}
+                    <strong>Дизайнер:</strong> {{ layout.designer_name }}
                 </p>
                 <p class="card-text">
-                    <strong>Клиент:</strong> {{ layout.client.name }},
-                    {{ layout.client.company|default:"частное лицо" }}
+                    <strong>Клиент:</strong> {{ layout.client_name }},
+                    {{ layout.client_company|default:"частное лицо" }}
                 </p>
                 <p class="card-text">
-                    <strong>Отправлен:</strong>
-                    {{ layout.sent_date|date:"d.m.Y" }}
+                    <strong>Отправлен:</strong> {{ layout.sent_date }}
                 </p>
                 <p class="card-text">
-                    <strong>Срок согласования:</strong>
-                    {{ layout.deadline|date:"d.m.Y" }}
-                    {% if layout.is_approved %}
+                    <strong>Срок согласования:</strong> {{ layout.deadline }}
+                    {% if layout.status == "Утверждён" %}
                         (макет утверждён)
                     {% elif days_left < 0 %}
                         <span class="text-danger">(срок истёк)</span>
