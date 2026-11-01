@@ -27,7 +27,11 @@
         </div>
     </form>
 
-    {% if check_date %}
+    {% if error %}
+        <p class="text-danger">{{ error }}</p>
+    {% endif %}
+
+    {% if check_date and not error %}
         <h2 class="h5">На дату {{ check_date }}: {{ layouts|length }}</h2>
         {% for layout in layouts %}
             {% include "layouts/includes/layout_card.html" %}

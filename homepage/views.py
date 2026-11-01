@@ -1,32 +1,21 @@
 """Главная страница и страница ошибки 404."""
 
+from django.db.models import Count
 from django.shortcuts import render
 
-from db.database import get_connection
+from layouts.models import Layout
 
 
 def index(request):
     """Главная страница: описание сервиса и статистика по статусам."""
-    conn = get_connection()
-    try:
-        layouts_count = conn.execute(
-            "SELECT COUNT(*) AS layouts_count FROM layouts"
-        ).fetchone()["layouts_count"]
-        statistics = conn.execute(
-            """
-            SELECT
-                status,
-                COUNT(*) AS layouts_count
-            FROM layouts
-            GROUP BY status
-            ORDER BY layouts_count DESC, status
-            """
-        ).fetchall()
-    finally:
-        conn.close()
+    statistics = (
+        Layout.objects.values("status")
+        .annotate(layouts_count=Count("id"))
+        .order_by("-layouts_count", "status")
+    )
 
     context = {
-        "layouts_count": layouts_count,
+        "layouts_count": Layout.objects.count(),
         "statistics": statistics,
     }
     return render(request, "homepage/index.html", context)

@@ -5,7 +5,10 @@
 сроков согласования. Консольная версия (ПР3) дополнена
 веб-интерфейсом на Django (ПР5), страницы которого формируются
 шаблонами Django (ПР6). В ПР7 данные перенесены в реляционную базу
-SQLite, а страницы сайта получают их SQL-запросами.
+SQLite, а страницы сайта получают их SQL-запросами. В ПР9 слой данных
+переведён на Django ORM: сущности описаны моделями Django, структура
+базы управляется миграциями, представления получают данные через
+менеджеры моделей.
 
 ## Используемые технологии
 
@@ -16,7 +19,9 @@ SQLite, а страницы сайта получают их SQL-запроса�
 - CSS3 и Bootstrap 5.3 — оформление страниц (Bootstrap подключается
   через CDN, собственный CSS — как статический файл);
 - JavaScript — небольшое поведение интерфейса;
-- SQLite и модуль `sqlite3` — реляционная база данных и SQL-запросы;
+- SQLite и модуль `sqlite3` — реляционная база данных и SQL-запросы
+  (ПР7);
+- Django ORM — модели, связи, миграции и запросы к базе (ПР9);
 - pytest — автоматизированные тесты;
 - flake8 — проверка качества кода.
 
@@ -123,13 +128,12 @@ SQLite, а страницы сайта получают их SQL-запроса�
 | `/comments/` | `comments:list` | `comments.views.comments()` | `comments/comment_list.html` |
 | `/comments/<int:comment_id>/` | `comments:detail` | `comments.views.comment_detail()` | `comments/comment_detail.html` |
 
-Страницы формируются шаблонами Django: view-функции выполняют
-SQL-запросы к базе SQLite (ПР7), собирают словарь контекста и
-вызывают `render()`. HTML в Python-коде не формируется.
+Страницы формируются шаблонами Django: view-функции получают данные
+через Django ORM (ПР9), собирают словарь контекста и вызывают
+`render()`. HTML в Python-коде не формируется.
 
 Если макет или комментарий с указанным идентификатором не найден,
-страница возвращает код статуса 404 с сообщением «Макет не найден» /
-«Комментарий не найден». Для адресов, которым не соответствует ни
+`get_object_or_404()` возвращает ответ 404. Для адресов, которым не соответствует ни
 один маршрут, используется собственная страница 404
 (`handler404 = "homepage.views.page_not_found"` в корневом
 `urls.py`, шаблон `templates/404.html`); она отображается при
@@ -205,10 +209,12 @@ View-функции передают данные в шаблон через с�
 
 ## Основные операции
 
-### Используется в веб-интерфейсе (ПР5–ПР7)
+### Используется в веб-интерфейсе (ПР5–ПР9)
 
-- просмотр списка макетов с сортировкой по сроку согласования;
-- поиск макетов по части названия и фильтрация по статусу (ПР7);
+- просмотр списка макетов с фильтрами по статусу, дизайнеру и
+  клиенту, выбором сортировки и постраничным выводом (ПР9);
+- поиск макетов по названию, дизайнеру, клиенту и компании
+  с фильтром по статусу (ПР7, ПР9);
 - просмотр макетов с истёкшим сроком на выбранную дату (ПР7);
 - страница статистики: количество макетов по статусам и дизайнерам,
   комментарии по макетам, макеты без комментариев (ПР7);
@@ -262,6 +268,10 @@ framework/
 │   ├── 404.html
 │   └── includes/
 │       └── navigation.html
+├── participants/
+│   ├── migrations/0001_initial.py
+│   ├── admin.py, apps.py
+│   └── models.py
 ├── homepage/
 │   ├── static/homepage/
 │   │   ├── css/style.css
@@ -282,7 +292,12 @@ framework/
 │   │   ├── statistics.html
 │   │   └── includes/
 │   │       ├── layout_card.html
-│   │       └── layout_status.html
+│   │       ├── layout_status.html
+│   │       └── pagination.html
+│   ├── migrations/0001_initial.py
+│   ├── admin.py, apps.py
+│   ├── models.py
+│   ├── tests.py
 │   ├── urls.py
 │   └── views.py
 ├── comments/
@@ -291,6 +306,9 @@ framework/
 │   │   ├── comment_detail.html
 │   │   └── includes/
 │   │       └── comment_item.html
+│   ├── migrations/0001_initial.py
+│   ├── admin.py, apps.py
+│   ├── models.py
 │   ├── urls.py
 │   └── views.py
 ├── models/
@@ -302,7 +320,9 @@ framework/
 │   ├── __init__.py
 │   ├── database.py
 │   ├── import_json.py
-│   └── shell.py
+│   ├── shell.py
+│   ├── inspect_source_db.py
+│   └── import_sqlite_to_orm.py
 ├── sql/
 │   ├── schema.sql
 │   └── queries.sql
@@ -342,8 +362,15 @@ framework/
 - отдельное приложение для дизайнеров и клиентов не создавалось:
   участники отображаются в карточках макетов и комментариев, а работа
   с пользователями будет реализована вместе с аутентификацией;
-- `models.py` Django-приложений пока пуст: Django-модели появятся при
-  переходе на Django ORM (не путать с пакетом `models/` из ПР3);
+- не путать модели Django (`layouts/models.py` и др.) с пакетом
+  `models/` из ПР3: он используется консольной версией;
+- `participants/` — Django-приложение участников (ПР9): модели
+  `Designer` и `Client`, миграции; собственных страниц нет;
+- `models.py` приложений `layouts` и `comments` — модели `Layout` и
+  `Comment` Django ORM (ПР9); `layouts/tests.py` — тесты Django;
+- `db/inspect_source_db.py` — инспекция исходной базы ПР7 (ПР9);
+- `db/import_sqlite_to_orm.py` — перенос данных из базы ПР7 в
+  таблицы Django ORM (ПР9);
 - `db/database.py` — путь к базе `data/layout_service.sqlite`,
   функция `get_connection()` (настройка `row_factory = sqlite3.Row`
   и `PRAGMA foreign_keys = ON`) и `create_tables()`;
@@ -472,6 +499,81 @@ SQL-запрос, получают строки `sqlite3.Row` и передаю�
 | `/layouts/statistics/` | `COUNT`, `GROUP BY`, `LEFT JOIN`, `HAVING`, `NOT IN` |
 | `/comments/`, `/comments/<id>/` | `JOIN` комментариев, макетов и клиентов |
 
+## Модели Django и ORM (ПР9)
+
+### Стратегия перехода
+
+Выбран вариант «таблицы, управляемые Django, и перенос данных».
+База ПР7 `data/layout_service.sqlite` сохраняется без изменений как
+источник данных. Django работает с базой `db.sqlite3` (параметр
+`DATABASES` в `settings.py`): таблицы в ней создаются миграциями,
+затем данные переносятся скриптом. Файл `db.sqlite3` в репозиторий
+не включается (`.gitignore`) — его можно воссоздать командами ниже.
+
+### Модели и связи
+
+| Модель | Приложение | Поля | Связи |
+|--------|------------|------|-------|
+| `Designer` | `participants` | `name` CharField, `email` EmailField (unique) | `designer.layouts` |
+| `Client` | `participants` | `name`, `email` (unique), `company` (blank, default="") | `client.layouts`, `client.comments` |
+| `Layout` | `layouts` | `title`, `version`, `sent_date` DateField, `approval_days`, `deadline` DateField (вычисляется в `save()`), `status` (choices) | `designer` FK → Designer (PROTECT), `client` FK → Client (PROTECT), `layout.comments` |
+| `Comment` | `comments` | `text` TextField, `comment_date` DateField, `layout_version` | `layout` FK → Layout (CASCADE), `author` FK → Client (PROTECT) |
+
+Первичные ключи `id` создаются Django автоматически
+(`BigAutoField`). `PROTECT` не даёт удалить дизайнера или клиента,
+пока на них ссылаются макеты и комментарии; `CASCADE` удаляет
+комментарии вместе с макетом. `related_name` задаёт обратный доступ:
+`designer.layouts.all()`, `layout.comments.all()`.
+
+### Миграции и перенос данных
+
+    python manage.py makemigrations participants layouts comments
+    python manage.py migrate
+    python manage.py showmigrations
+    python db/inspect_source_db.py
+    python db/import_sqlite_to_orm.py
+
+`inspect_source_db.py` только читает исходную базу: выводит таблицы,
+столбцы, количество записей и проверяет ссылки. Скрипт
+`import_sqlite_to_orm.py` переносит дизайнеров, клиентов, макеты и
+комментарии в таблицы Django через `update_or_create()` с сохранением
+идентификаторов, в одной транзакции `transaction.atomic()`; строки
+дат преобразуются в объекты `date`.
+
+### ORM-запросы проекта
+
+| Вид | Где | Выражение |
+|-----|-----|-----------|
+| Получение списка | `layouts()` | `Layout.objects.all()` |
+| Получение объекта | `layout_detail()`, `comment_detail()` | `get_object_or_404(..., pk=...)` |
+| Фильтр по одному полю | `layouts()` | `filter(status=status)` |
+| Фильтр по внешнему ключу | `layouts()` | `filter(designer_id=...)`, `filter(client_id=...)` |
+| Несколько условий | `overdue()` | `filter(deadline__lt=дата).exclude(status=Утверждён)` |
+| Исключение | `overdue()` | `exclude(status=...)` |
+| Поиск по строковому полю | `search()` | `Q(title__icontains=q)` |
+| Поиск по нескольким полям | `search()` | `Q(...) \| Q(designer__name__icontains=q) \| Q(client__name__icontains=q) \| Q(client__company__icontains=q)` |
+| Сортировка по полю | `search()`, `overdue()` | `order_by("title")`, `order_by("deadline")` |
+| Сортировка по выбору и по связанному полю | `layouts()` | `order_by(SORT_FIELDS[sort], "pk")`, `client__name` |
+| Связанные объекты | `layout_detail()`, `comments()` | `select_related("designer", "client")`, `select_related("layout", "author")` |
+| Обратная связь | `layout_detail()` | `layout.comments.select_related("author")` |
+| Сокращённый набор полей | `layouts()` | `annotate(designer_name=F("designer__name")).values(...)` |
+| Агрегирование | `statistics()` | `aggregate(Count, Avg, Max)`, `Comment.objects.count()` |
+| Группировка | `index()`, `statistics()` | `values("status").annotate(Count("id"))` |
+| Аннотирование по связи | `statistics()` | `Designer.objects.annotate(Count("layouts"))`, `Layout.objects.annotate(Count("comments"))` |
+| Фильтр по аннотации (HAVING) | `statistics()` | `filter(comments_count__gte=min)` |
+| Объекты без связанных записей | `statistics()` | `filter(comments__isnull=True)` |
+| Постраничный вывод | `layouts()` | `Paginator(..., 2)`, `get_page()`, `{% querystring %}` |
+
+Пользовательские значения проверяются: статус — по списку
+`Layout.STATUSES`, идентификаторы — `isdigit()`, дата — разбором
+`datetime.strptime()`, поле сортировки — по словарю `SORT_FIELDS`
+(произвольное значение не передаётся в `order_by()`), номер
+страницы — методом `get_page()`.
+
+SQL-слой ПР7 (`sql/`, `db/database.py`, `db/import_json.py`,
+`db/shell.py`) сохранён в репозитории как предыдущая реализация и
+источник данных; представления его больше не используют.
+
 ## Требования
 
 - Python 3.x;
@@ -493,10 +595,11 @@ SQL-запрос, получают строки `sqlite3.Row` и передаю�
 
 ## Запуск приложения
 
-Веб-версия (Django). Перед первым запуском применить встроенные
-миграции и проверить проект:
+Веб-версия (Django). Перед первым запуском применить миграции,
+перенести данные и проверить проект:
 
     python manage.py migrate
+    python db/import_sqlite_to_orm.py
     python manage.py check
     python manage.py runserver
 
@@ -509,6 +612,7 @@ SQL-запрос, получают строки `sqlite3.Row` и передаю�
 ## Тестирование
 
     pytest -v
+    python manage.py test
 
 Тесты проверяют создание объектов `Designer`, `Client`, `Layout` и
 `Comment`, значения их атрибутов, строковые представления, различие
@@ -519,7 +623,12 @@ SQL-запрос, получают строки `sqlite3.Row` и передаю�
 создают временную базу, переносят в неё данные и проверяют
 количество записей, повторный импорт, доступ к полям по именам,
 проверку внешних ключей, `JOIN`, `GROUP BY` с `HAVING` и
-параметризованный запрос.
+параметризованный запрос. Тесты Django `layouts/tests.py` (ПР9,
+`python manage.py test`) работают с отдельной тестовой базой и
+проверяют вычисление срока, прямые и обратные связи, `PROTECT` и
+`CASCADE`, пагинацию, фильтр, неизвестную сортировку и номер
+страницы, ответ 404, поиск, просроченные макеты, статистику и
+страницы комментариев.
 
 ## Проверка качества кода
 
@@ -595,12 +704,24 @@ SQL-запрос, получают строки `sqlite3.Row` и передаю�
 - добавлены страницы поиска макетов, просроченных макетов и
   статистики, пункт «Статистика» в навигации.
 
-Django ORM и формы на текущем этапе не используются: база данных
-работает через модуль `sqlite3`.
+Реализовано (ПР9):
+
+- модели `Designer`, `Client` (новое приложение `participants`),
+  `Layout`, `Comment`, связи `ForeignKey` с `on_delete` и
+  `related_name`;
+- миграции приложений; данные перенесены из базы ПР7 скриптом
+  `db/import_sqlite_to_orm.py`;
+- все представления переведены с `sqlite3` на Django ORM;
+- список макетов: фильтры по статусу, дизайнеру и клиенту, выбор
+  сортировки и постраничный вывод с сохранением параметров;
+- поиск по нескольким полям, статистика через `aggregate()` и
+  `annotate()`, тесты Django.
+
+Формы создания и изменения данных через сайт будут реализованы в
+следующих работах.
 
 Планируется:
 
-- перенос таблиц базы в модели Django ORM;
 - формы создания макетов и комментариев, смена статуса через сайт;
 - реализация пользователей и разграничения доступа;
 - разработка REST API;

@@ -8,7 +8,7 @@
 
     <ul class="list-group">
         {% for comment in comments %}
-            {% include "comments/includes/comment_item.html" %}
+            {% include "comments/includes/comment_item.html" with show_layout=True %}
         {% empty %}
             <li class="list-group-item">Комментарии не найдены.</li>
         {% endfor %}

@@ -6,25 +6,32 @@
     <h1>Статистика</h1>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card stat-card card-body">
                 <span class="stat-value">{{ totals.layouts_count }}</span>
                 всего макетов
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card stat-card card-body">
                 <span class="stat-value">{{ totals.waiting_count }}</span>
                 ждут ответа клиента
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card stat-card card-body">
                 <span class="stat-value">{{ totals.comments_count }}</span>
                 комментариев
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="card stat-card card-body">
+                <span class="stat-value">{{ totals.avg_days|floatformat:1 }}</span>
+                дней на согласование в среднем
+            </div>
+        </div>
     </div>
+    <p class="text-muted">Максимальная версия макета: {{ totals.max_version|default:"—" }}</p>
 
     <div class="row g-4">
         <div class="col-md-6">
@@ -41,12 +48,15 @@
             </ul>
         </div>
         <div class="col-md-6">
-            <h2 class="h5">Макеты по дизайнерам</h2>
+            <h2 class="h5">Макеты по дизайнерам (всего / в работе)</h2>
             <ul class="list-group">
                 {% for item in by_designer %}
                     <li class="list-group-item d-flex justify-content-between">
-                        {{ item.designer_name }}
-                        <span class="badge bg-primary rounded-pill">{{ item.layouts_count }}</span>
+                        {{ item.name }}
+                        <span>
+                            <span class="badge bg-primary rounded-pill" title="всего">{{ item.layouts_count }}</span>
+                            <span class="badge bg-warning text-dark rounded-pill" title="в работе">{{ item.waiting_count }}</span>
+                        </span>
                     </li>
                 {% empty %}
                     <li class="list-group-item">Данные отсутствуют.</li>

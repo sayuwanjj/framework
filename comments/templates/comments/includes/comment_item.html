@@ -1,8 +1,8 @@
 <li class="list-group-item comment-item d-flex justify-content-between">
-    <a href="{% url 'comments:detail' comment.id %}">
-        {% if comment.layout_title %}{{ comment.layout_title }}: {% endif %}{{ comment.text|truncatechars:60 }}
+    <a href="{% url 'comments:detail' comment.pk %}">
+        {% if show_layout %}{{ comment.layout.title }}: {% endif %}{{ comment.text|truncatechars:60 }}
     </a>
     <span class="badge bg-info text-dark">
-        {{ comment.comment_date }}
+        {{ comment.comment_date|date:"d.m.Y" }}
     </span>
 </li>
