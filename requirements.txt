@@ -5,3 +5,5 @@ pep8-naming>=0.14
 flake8-isort>=6.1
 autopep8>=2.3
 mypy>=1.15
+django-debug-toolbar==8.0.0
+pytest-django>=4.11,<5

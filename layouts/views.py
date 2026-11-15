@@ -160,9 +160,7 @@ def overdue(request):
             error = "Укажите корректную дату в формате ГГГГ-ММ-ДД."
         else:
             results = with_names(
-                Layout.objects.filter(deadline__lt=selected_date).exclude(
-                    status=Layout.STATUS_APPROVED
-                )
+                Layout.objects.overdue(selected_date)
             ).order_by("deadline")
 
     context = {

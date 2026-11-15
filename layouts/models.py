@@ -7,18 +7,30 @@ from django.db import models
 from participants.models import Client, Designer
 
 
+class LayoutQuerySet(models.QuerySet):
+    """Переиспользуемые условия предметной области."""
+
+    def active(self):
+        return self.exclude(status=Layout.Status.APPROVED)
+
+    def overdue(self, on_date):
+        return self.active().filter(deadline__lt=on_date)
+
+
 class Layout(models.Model):
     """Макет: связан с одним дизайнером и одним клиентом."""
 
-    STATUS_REVIEW = "На согласовании"
-    STATUS_REVISION = "На доработке"
-    STATUS_APPROVED = "Утверждён"
-    STATUSES = [STATUS_REVIEW, STATUS_REVISION, STATUS_APPROVED]
-    STATUS_CHOICES = [
-        (STATUS_REVIEW, STATUS_REVIEW),
-        (STATUS_REVISION, STATUS_REVISION),
-        (STATUS_APPROVED, STATUS_APPROVED),
-    ]
+    class Status(models.TextChoices):
+        REVIEW = "На согласовании", "На согласовании"
+        REVISION = "На доработке", "На доработке"
+        APPROVED = "Утверждён", "Утверждён"
+
+    STATUS_REVIEW = Status.REVIEW
+    STATUS_REVISION = Status.REVISION
+    STATUS_APPROVED = Status.APPROVED
+    STATUSES = Status.values
+    STATUS_CHOICES = Status.choices
+    objects = LayoutQuerySet.as_manager()
 
     title = models.CharField(
         max_length=200,
@@ -69,6 +81,10 @@ class Layout(models.Model):
     def save(self, *args, **kwargs):
         """Пересчитать срок согласования и сохранить макет."""
         self.deadline = self.sent_date + timedelta(days=self.approval_days)
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and {
+                "sent_date", "approval_days"}.intersection(update_fields):
+            kwargs["update_fields"] = set(update_fields) | {"deadline"}
         super().save(*args, **kwargs)
 
     @property
