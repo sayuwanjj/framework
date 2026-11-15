@@ -1,8 +1,11 @@
 """Модель макета, отправленного клиенту на согласование."""
 
 from datetime import date, timedelta
+from uuid import uuid4
 
 from django.db import models
+from django.urls import reverse
+from django.utils.text import slugify
 
 from participants.models import Client, Designer
 
@@ -21,9 +24,9 @@ class Layout(models.Model):
     """Макет: связан с одним дизайнером и одним клиентом."""
 
     class Status(models.TextChoices):
-        REVIEW = "На согласовании", "На согласовании"
-        REVISION = "На доработке", "На доработке"
-        APPROVED = "Утверждён", "Утверждён"
+        REVIEW = "REVIEW", "На согласовании"
+        REVISION = "REVISION", "На доработке"
+        APPROVED = "APPROVED", "Утверждён"
 
     STATUS_REVIEW = Status.REVIEW
     STATUS_REVISION = Status.REVISION
@@ -35,6 +38,18 @@ class Layout(models.Model):
     title = models.CharField(
         max_length=200,
         verbose_name="Название макета",
+    )
+    slug = models.SlugField(max_length=250, unique=True, blank=True,
+                            verbose_name="Адрес макета")
+    is_revised = models.GeneratedField(
+        expression=models.Case(
+            models.When(version__gt=1, then=models.Value(True)),
+            default=models.Value(False),
+            output_field=models.BooleanField(),
+        ),
+        output_field=models.BooleanField(),
+        db_persist=True,
+        verbose_name="Повторная версия",
     )
     version = models.PositiveIntegerField(
         default=1,
@@ -80,6 +95,12 @@ class Layout(models.Model):
 
     def save(self, *args, **kwargs):
         """Пересчитать срок согласования и сохранить макет."""
+        if not self.slug:
+            base = slugify(self.title)[:200] or "layout"
+            self.slug = f"{base}-{uuid4().hex}"
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = set(
+                    kwargs["update_fields"]) | {"slug"}
         self.deadline = self.sent_date + timedelta(days=self.approval_days)
         update_fields = kwargs.get("update_fields")
         if update_fields is not None and {
@@ -110,6 +131,9 @@ class Layout(models.Model):
         self.status = Layout.STATUS_REVISION
         self.version += 1
         self.save(update_fields=["status", "version"])
+
+    def get_absolute_url(self):
+        return reverse("layouts:detail_by_slug", kwargs={"slug": self.slug})
 
     def __str__(self) -> str:
         return f"{self.title} (версия {self.version})"

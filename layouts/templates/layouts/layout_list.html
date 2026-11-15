@@ -20,9 +20,9 @@
                 <label for="status" class="form-label">Статус</label>
                 <select id="status" name="status" class="form-select">
                     <option value="">Все статусы</option>
-                    {% for item in statuses %}
-                        <option value="{{ item }}" {% if item == selected_status %}selected{% endif %}>
-                            {{ item }}
+                    {% for value, label in statuses %}
+                        <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>
+                            {{ label }}
                         </option>
                     {% endfor %}
                 </select>

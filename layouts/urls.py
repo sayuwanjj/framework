@@ -9,5 +9,6 @@ urlpatterns = [
     path("search/", views.search, name="search"),
     path("overdue/", views.overdue, name="overdue"),
     path("statistics/", views.statistics, name="statistics"),
+    path("by-slug/<slug:slug>/", views.layout_detail, name="detail_by_slug"),
     path("<int:layout_id>/", views.layout_detail, name="detail"),
 ]

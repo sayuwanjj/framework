@@ -22,9 +22,9 @@
                 <label for="status" class="form-label">Статус:</label>
                 <select id="status" name="status" class="form-select">
                     <option value="">Любой</option>
-                    {% for item in statuses %}
-                        <option value="{{ item }}" {% if item == status %}selected{% endif %}>
-                            {{ item }}
+                    {% for value, label in statuses %}
+                        <option value="{{ value }}" {% if value == status %}selected{% endif %}>
+                            {{ label }}
                         </option>
                     {% endfor %}
                 </select>

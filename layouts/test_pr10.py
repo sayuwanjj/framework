@@ -54,6 +54,39 @@ class Pr10Tests(TestCase):
         obj.approve()
         self.assertEqual(Layout.objects.overdue(date(2026, 9, 10)).count(), 4)
 
+    def test_slug_url_is_unique_and_stable(self):
+        obj = Layout.objects.first()
+        other = Layout.objects.last()
+        other.title = obj.title
+        other.save()
+        self.assertNotEqual(obj.slug, other.slug)
+        url = obj.get_absolute_url()
+        self.assertContains(self.client.get(url), obj.title)
+        obj.title = "Новое название"
+        obj.save()
+        self.assertEqual(obj.get_absolute_url(), url)
+        self.assertEqual(self.client.get(
+            reverse('layouts:detail_by_slug', args=['missing-slug'])
+        ).status_code, 404)
+
+    def test_database_recalculates_generated_field(self):
+        obj = Layout.objects.first()
+        Layout.objects.filter(pk=obj.pk).update(version=1)
+        obj.refresh_from_db()
+        self.assertFalse(obj.is_revised)
+        Layout.objects.filter(pk=obj.pk).update(version=2)
+        obj.refresh_from_db()
+        self.assertTrue(obj.is_revised)
+
+    def test_status_codes_have_russian_labels(self):
+        obj = Layout.objects.first()
+        obj.status = Layout.Status.APPROVED
+        obj.save(update_fields=['status'])
+        response = self.client.get(reverse('layouts:list'),
+                                   {'status': 'APPROVED'})
+        self.assertContains(response, 'Утверждён')
+        self.assertEqual(obj.get_status_display(), 'Утверждён')
+
     def test_partial_save_updates_derived_deadline(self):
         obj = Layout.objects.first()
         obj.approval_days = 10

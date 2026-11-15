@@ -98,7 +98,11 @@ def main() -> None:
                     "client_id": row["client_id"],
                     "sent_date": date.fromisoformat(row["sent_date"]),
                     "approval_days": row["approval_days"],
-                    "status": row["status"],
+                    "status": {
+                        "На согласовании": Layout.Status.REVIEW,
+                        "На доработке": Layout.Status.REVISION,
+                        "Утверждён": Layout.Status.APPROVED,
+                    }.get(row["status"], row["status"]),
                 },
             )
         # В конце комментарии: они ссылаются на макеты и клиентов.

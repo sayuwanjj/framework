@@ -3,7 +3,8 @@
 from datetime import date, datetime
 
 from django.core.paginator import Paginator
-from django.db.models import Avg, Count, F, Max, Q
+from django.db.models import (Avg, Case, CharField, Count, F, Max, Q, Value,
+                              When)
 from django.shortcuts import get_object_or_404, render
 
 from comments.models import Comment
@@ -36,6 +37,11 @@ def with_names(queryset):
     return queryset.annotate(
         designer_name=F("designer__name"),
         client_name=F("client__name"),
+        status_label=Case(
+            *[When(status=value, then=Value(label))
+              for value, label in Layout.Status.choices],
+            default=F("status"), output_field=CharField(),
+        ),
     )
 
 
@@ -71,6 +77,8 @@ def layouts(request):
         .order_by(SORT_FIELDS[sort], "pk")
         .values(
             "id",
+            "slug",
+            "status_label",
             "title",
             "version",
             "status",
@@ -87,7 +95,7 @@ def layouts(request):
         "layouts": page_obj,
         "page_obj": page_obj,
         "total": paginator.count,
-        "statuses": Layout.STATUSES,
+        "statuses": Layout.Status.choices,
         "designers": Designer.objects.order_by("name"),
         "clients": Client.objects.order_by("name"),
         "selected_status": status,
@@ -99,12 +107,12 @@ def layouts(request):
     return render(request, "layouts/layout_list.html", context)
 
 
-def layout_detail(request, layout_id):
+def layout_detail(request, layout_id=None, slug=None):
     """Страница /layouts/<id>/: карточка макета и его комментарии."""
     # select_related загружает дизайнера и клиента тем же запросом.
     layout = get_object_or_404(
         Layout.objects.select_related("designer", "client"),
-        pk=layout_id,
+        **({"slug": slug} if slug is not None else {"pk": layout_id}),
     )
     # Обратная связь: комментарии макета через related_name="comments".
     comments = layout.comments.select_related("author")
@@ -141,7 +149,7 @@ def search(request):
     context = {
         "query": query,
         "status": status,
-        "statuses": Layout.STATUSES,
+        "statuses": Layout.Status.choices,
         "searched": searched,
         "layouts": results,
     }
@@ -187,7 +195,7 @@ def statistics(request):
 
     # values() + annotate() — группировка по статусу (GROUP BY).
     by_status = (
-        Layout.objects.values("status")
+        with_names(Layout.objects.all()).values("status", "status_label")
         .annotate(layouts_count=Count("id"))
         .order_by("-layouts_count", "status")
     )

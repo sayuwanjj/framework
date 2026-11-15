@@ -13,6 +13,9 @@ def index(request):
         .annotate(layouts_count=Count("id"))
         .order_by("-layouts_count", "status")
     )
+    statistics = list(statistics)
+    for item in statistics:
+        item["status"] = Layout.Status(item["status"]).label
 
     context = {
         "layouts_count": Layout.objects.count(),

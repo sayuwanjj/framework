@@ -34,6 +34,6 @@ class LayoutAdmin(admin.ModelAdmin):
     list_per_page = 20
     list_select_related = ("designer", "client")
     autocomplete_fields = ("designer", "client")
-    readonly_fields = ("deadline",)
+    readonly_fields = ("deadline", "slug", "is_revised")
     date_hierarchy = "sent_date"
     inlines = (CommentInline,)
