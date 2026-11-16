@@ -27,6 +27,8 @@
                 {{ layout.deadline|date:"d.m.Y" }}
                 {% if layout.is_approved %}
                     (макет утверждён)
+                {% elif layout.status == "CANCELLED" %}
+                    (согласование отменено)
                 {% elif days_left < 0 %}
                     <span class="text-danger">(срок истёк)</span>
                 {% else %}
@@ -35,6 +37,24 @@
             </p>
         </div>
     </div>
+
+    {% if layout.image %}
+        <figure class="mb-4">
+            <img src="{{ layout.image.url }}" alt="Изображение макета {{ layout.title }}" class="img-fluid rounded" style="max-height: 480px;">
+            <figcaption class="text-muted">Изображение макета</figcaption>
+        </figure>
+    {% else %}
+        <p class="text-muted">Изображение не загружено.</p>
+    {% endif %}
+    {% if layout.is_active %}
+        <div class="d-flex gap-2 mb-4">
+            <a href="{% url 'layouts:update' layout.pk %}" class="btn btn-primary">Редактировать</a>
+            <form method="post" action="{% url 'layouts:cancel' layout.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger">Отменить согласование</button>
+            </form>
+        </div>
+    {% endif %}
 
     <h2 class="h4">Комментарии клиента ({{ comments|length }})</h2>
     <ul class="list-group">

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if layout %}Редактирование макета{% else %}Создание макета{% endif %}{% endblock %}
+{% block content %}
+    <h1>{% if layout %}Редактирование макета{% else %}Создание макета{% endif %}</h1>
+    {% if layout %}
+        <p>ID {{ layout.pk }} · Версия {{ layout.version }} · {{ layout.get_status_display }}</p>
+    {% else %}
+        <p>Новый макет получит статус «На согласовании» и версию 1.</p>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" class="card card-body mb-4" novalidate>
+        {% csrf_token %}
+        {% include "layouts/includes/form_fields.html" %}
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            {% if layout %}
+                <a href="{{ layout.get_absolute_url }}" class="btn btn-outline-secondary">Назад к макету</a>
+            {% else %}
+                <a href="{% url 'layouts:list' %}" class="btn btn-outline-secondary">К списку макетов</a>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}

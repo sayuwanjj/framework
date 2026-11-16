@@ -7,6 +7,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
+from layouts.validators import validate_layout_image
 from participants.models import Client, Designer
 
 
@@ -14,7 +15,9 @@ class LayoutQuerySet(models.QuerySet):
     """Переиспользуемые условия предметной области."""
 
     def active(self):
-        return self.exclude(status=Layout.Status.APPROVED)
+        return self.filter(status__in=[
+            Layout.Status.REVIEW, Layout.Status.REVISION,
+        ])
 
     def overdue(self, on_date):
         return self.active().filter(deadline__lt=on_date)
@@ -27,6 +30,7 @@ class Layout(models.Model):
         REVIEW = "REVIEW", "На согласовании"
         REVISION = "REVISION", "На доработке"
         APPROVED = "APPROVED", "Утверждён"
+        CANCELLED = "CANCELLED", "Отменён"
 
     STATUS_REVIEW = Status.REVIEW
     STATUS_REVISION = Status.REVISION
@@ -87,11 +91,22 @@ class Layout(models.Model):
         default=STATUS_REVIEW,
         verbose_name="Статус",
     )
+    image = models.ImageField(
+        upload_to="layouts/%Y/%m/", blank=True,
+        validators=[validate_layout_image], verbose_name="Изображение макета",
+    )
 
     class Meta:
         ordering = ["deadline", "pk"]
         verbose_name = "Макет"
         verbose_name_plural = "Макеты"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["title", "designer", "client", "sent_date"],
+                condition=models.Q(status__in=["REVIEW", "REVISION"]),
+                name="unique_active_layout_request",
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         """Пересчитать срок согласования и сохранить макет."""
@@ -113,21 +128,33 @@ class Layout(models.Model):
         """Признак того, что макет утверждён."""
         return self.status == Layout.STATUS_APPROVED
 
+    @property
+    def is_active(self) -> bool:
+        return self.status in {self.Status.REVIEW, self.Status.REVISION}
+
+    def cancel(self) -> None:
+        """Сохранить историю заявки, исключив её из активных согласований."""
+        if not self.is_active:
+            raise ValueError("Отменить можно только активное согласование")
+        self.status = self.Status.CANCELLED
+        self.save(update_fields=["status"])
+
     def days_left(self, today: date) -> int:
         """Число дней, оставшихся до окончания срока согласования."""
         return (self.deadline - today).days
 
     def approve(self) -> None:
         """Утвердить макет и сохранить только поле status."""
-        if self.is_approved:
-            raise ValueError("Макет уже утверждён")
+        if not self.is_active:
+            raise ValueError(
+                "Завершённое согласование нельзя утвердить повторно")
         self.status = Layout.STATUS_APPROVED
         self.save(update_fields=["status"])
 
     def send_to_revision(self) -> None:
         """Отправить макет на доработку: новая версия и новый статус."""
-        if self.is_approved:
-            raise ValueError("Утверждённый макет не дорабатывается")
+        if not self.is_active:
+            raise ValueError("Завершённое согласование не дорабатывается")
         self.status = Layout.STATUS_REVISION
         self.version += 1
         self.save(update_fields=["status", "version"])

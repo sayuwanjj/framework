@@ -2,6 +2,10 @@
     <span class="badge bg-success layout-status layout-status-approved">
         {% if layout.status_label %}{{ layout.status_label }}{% else %}{{ layout.get_status_display }}{% endif %}
     </span>
+{% elif layout.status == "CANCELLED" %}
+    <span class="badge bg-dark layout-status layout-status-cancelled">
+        {% if layout.status_label %}{{ layout.status_label }}{% else %}{{ layout.get_status_display }}{% endif %}
+    </span>
 {% elif layout.status == "REVISION" %}
     <span class="badge bg-secondary layout-status layout-status-revision">
         {% if layout.status_label %}{{ layout.status_label }}{% else %}{{ layout.get_status_display }}{% endif %}

@@ -7,3 +7,4 @@ autopep8>=2.3
 mypy>=1.15
 django-debug-toolbar==8.0.0
 pytest-django>=4.11,<5
+Pillow>=11,<13

@@ -2,14 +2,18 @@
 
 from datetime import date, datetime
 
+from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
 from django.db.models import (Avg, Case, CharField, Count, F, Max, Q, Value,
                               When)
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods, require_POST
 
 from comments.models import Comment
+from layouts.forms import LayoutFilterForm, LayoutForm
 from layouts.models import Layout
-from participants.models import Client, Designer
+from participants.models import Designer
 
 # Количество макетов на одной странице списка.
 LAYOUTS_PER_PAGE = 2
@@ -23,13 +27,6 @@ SORT_FIELDS = {
     "client": "client__name",
     "designer": "designer__name",
 }
-SORT_CHOICES = [
-    ("deadline", "сроку согласования"),
-    ("sent", "дате отправки (сначала новые)"),
-    ("title", "названию"),
-    ("client", "клиенту"),
-    ("designer", "дизайнеру"),
-]
 
 
 def with_names(queryset):
@@ -55,22 +52,25 @@ def parse_date(value: str) -> date | None:
 
 def layouts(request):
     """Страница /layouts/: фильтры, сортировка и постраничный вывод."""
-    status = request.GET.get("status", "").strip()
-    designer_id = request.GET.get("designer", "").strip()
-    client_id = request.GET.get("client", "").strip()
-    sort = request.GET.get("sort", "deadline")
-    if sort not in SORT_FIELDS:
-        sort = "deadline"
-
+    filter_form = LayoutFilterForm(request.GET if request.GET else None)
+    sort = "deadline"
     layouts_data = Layout.objects.all()
-
-    # Каждый filter() добавляет условие «И» и сужает выборку.
-    if status in Layout.STATUSES:
-        layouts_data = layouts_data.filter(status=status)
-    if designer_id.isdigit():
-        layouts_data = layouts_data.filter(designer_id=int(designer_id))
-    if client_id.isdigit():
-        layouts_data = layouts_data.filter(client_id=int(client_id))
+    if filter_form.is_bound:
+        if filter_form.is_valid():
+            data = filter_form.cleaned_data
+            if data["status"]:
+                layouts_data = layouts_data.filter(status=data["status"])
+            if data["designer"]:
+                layouts_data = layouts_data.filter(designer=data["designer"])
+            if data["client"]:
+                layouts_data = layouts_data.filter(client=data["client"])
+            if data["date"]:
+                layouts_data = layouts_data.filter(sent_date=data["date"])
+            if data["active_only"]:
+                layouts_data = layouts_data.active()
+            sort = data["sort"] or "deadline"
+        else:
+            layouts_data = layouts_data.none()
 
     layouts_data = (
         with_names(layouts_data)
@@ -95,14 +95,9 @@ def layouts(request):
         "layouts": page_obj,
         "page_obj": page_obj,
         "total": paginator.count,
-        "statuses": Layout.Status.choices,
-        "designers": Designer.objects.order_by("name"),
-        "clients": Client.objects.order_by("name"),
-        "selected_status": status,
-        "selected_designer": designer_id,
-        "selected_client": client_id,
+        "filter_form": filter_form,
         "sort": sort,
-        "sort_choices": SORT_CHOICES,
+
     }
     return render(request, "layouts/layout_list.html", context)
 
@@ -187,7 +182,8 @@ def statistics(request):
     # aggregate() возвращает словарь с итоговыми показателями.
     totals = Layout.objects.aggregate(
         layouts_count=Count("id"),
-        waiting_count=Count("id", filter=~Q(status=Layout.STATUS_APPROVED)),
+        waiting_count=Count("id", filter=Q(
+            status__in=[Layout.Status.REVIEW, Layout.Status.REVISION])),
         avg_days=Avg("approval_days"),
         max_version=Max("version"),
     )
@@ -206,7 +202,8 @@ def statistics(request):
         layouts_count=Count("layouts"),
         waiting_count=Count(
             "layouts",
-            filter=~Q(layouts__status=Layout.STATUS_APPROVED),
+            filter=Q(layouts__status__in=[
+                     Layout.Status.REVIEW, Layout.Status.REVISION]),
         ),
     ).order_by("-layouts_count", "name")
 
@@ -231,3 +228,58 @@ def statistics(request):
         "without_comments": without_comments,
     }
     return render(request, "layouts/statistics.html", context)
+
+
+def save_layout_form(form):
+    """Перехватить конфликт уникальности при одновременной отправке."""
+    try:
+        with transaction.atomic():
+            return form.save()
+    except IntegrityError:
+        form.add_error(
+            None, "Сохранение не выполнено: активная заявка уже существует.")
+        return None
+
+
+@require_http_methods(["GET", "POST"])
+def layout_create(request):
+    """GET показывает форму; успешный POST создаёт макет и перенаправляет."""
+    if request.method == "POST":
+        form = LayoutForm(request.POST, request.FILES)
+        if form.is_valid():
+            layout = save_layout_form(form)
+            if layout is not None:
+                messages.success(
+                    request, "Макет создан и отправлен на согласование.")
+                return redirect(layout)
+    else:
+        form = LayoutForm()
+    return render(request, "layouts/layout_form.html", {"form": form})
+
+
+@require_http_methods(["GET", "POST"])
+def layout_update(request, layout_id):
+    """Изменить существующую активную заявку, сохранив её id и slug."""
+    layout = get_object_or_404(Layout.objects.active(), pk=layout_id)
+    if request.method == "POST":
+        form = LayoutForm(request.POST, request.FILES, instance=layout)
+        if form.is_valid():
+            saved = save_layout_form(form)
+            if saved is not None:
+                messages.success(request, "Изменения макета сохранены.")
+                return redirect(saved)
+    else:
+        form = LayoutForm(instance=layout)
+    return render(request, "layouts/layout_form.html", {
+        "form": form, "layout": layout,
+    })
+
+
+@require_POST
+def layout_cancel(request, layout_id):
+    """Отмена доступна только через защищённый POST; история сохраняется."""
+    layout = get_object_or_404(Layout.objects.active(), pk=layout_id)
+    layout.cancel()
+    messages.success(
+        request, "Согласование отменено. Запись сохранена в истории.")
+    return redirect(layout)

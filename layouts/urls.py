@@ -5,6 +5,9 @@ from . import views
 app_name = "layouts"
 
 urlpatterns = [
+    path("create/", views.layout_create, name="create"),
+    path("<int:layout_id>/edit/", views.layout_update, name="update"),
+    path("<int:layout_id>/cancel/", views.layout_cancel, name="cancel"),
     path("", views.layouts, name="list"),
     path("search/", views.search, name="search"),
     path("overdue/", views.overdue, name="overdue"),
