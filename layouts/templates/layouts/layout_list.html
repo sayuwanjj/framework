@@ -6,6 +6,9 @@
     <h1>Макеты</h1>
 
     <div class="section-links mb-3">
+        <a href="{% url 'layouts:create' %}" class="btn btn-primary btn-sm">
+            Добавить макет
+        </a>
         <a href="{% url 'layouts:search' %}" class="btn btn-outline-primary btn-sm">
             Найти макет
         </a>
@@ -15,51 +18,9 @@
     </div>
 
     <form method="get" class="search-form card card-body mb-4">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label for="status" class="form-label">Статус</label>
-                <select id="status" name="status" class="form-select">
-                    <option value="">Все статусы</option>
-                    {% for item in statuses %}
-                        <option value="{{ item }}" {% if item == selected_status %}selected{% endif %}>
-                            {{ item }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="designer" class="form-label">Дизайнер</label>
-                <select id="designer" name="designer" class="form-select">
-                    <option value="">Все дизайнеры</option>
-                    {% for designer in designers %}
-                        <option value="{{ designer.pk }}" {% if selected_designer == designer.pk|stringformat:"s" %}selected{% endif %}>
-                            {{ designer.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="client" class="form-label">Клиент</label>
-                <select id="client" name="client" class="form-select">
-                    <option value="">Все клиенты</option>
-                    {% for client in clients %}
-                        <option value="{{ client.pk }}" {% if selected_client == client.pk|stringformat:"s" %}selected{% endif %}>
-                            {{ client.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="sort" class="form-label">Сортировать по</label>
-                <select id="sort" name="sort" class="form-select">
-                    {% for value, label in sort_choices %}
-                        <option value="{{ value }}" {% if sort == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
+        {% with form=filter_form %}
+            {% include "layouts/includes/form_fields.html" %}
+        {% endwith %}
         <div class="mt-3">
             <button type="submit" class="btn btn-primary">Показать</button>
             <a href="{% url 'layouts:list' %}" class="btn btn-outline-secondary">Сбросить</a>

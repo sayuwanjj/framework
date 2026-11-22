@@ -12,7 +12,7 @@
                 Дизайнер: {{ layout.designer_name }} ·
                 клиент: {{ layout.client_name }}
             </p>
-            <a href="{% url 'layouts:detail' layout.id %}" class="btn btn-primary btn-sm">
+            <a href="{% url 'layouts:detail_by_slug' layout.slug %}" class="btn btn-primary btn-sm">
                 Подробнее
             </a>
         </div>

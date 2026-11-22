@@ -39,7 +39,7 @@
             <ul class="list-group">
                 {% for item in by_status %}
                     <li class="list-group-item d-flex justify-content-between">
-                        {{ item.status }}
+                        {{ item.status_label }}
                         <span class="badge bg-primary rounded-pill">{{ item.layouts_count }}</span>
                     </li>
                 {% empty %}
@@ -82,7 +82,7 @@
                 {% for item in without_comments %}
                     <li class="list-group-item d-flex justify-content-between">
                         <a href="{% url 'layouts:detail' item.id %}">{{ item.title }}</a>
-                        <span class="text-muted">{{ item.status }}</span>
+                        <span class="text-muted">{{ item.get_status_display }}</span>
                     </li>
                 {% empty %}
                     <li class="list-group-item">Все макеты уже прокомментированы.</li>

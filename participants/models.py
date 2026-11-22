@@ -8,7 +8,7 @@ class Designer(models.Model):
 
     # Имя дизайнера: строка ограниченной длины.
     name = models.CharField(
-        max_length=200,
+        max_length=300,
         verbose_name="Имя дизайнера",
     )
     # Почта: EmailField проверяет формат, unique запрещает повторы.
